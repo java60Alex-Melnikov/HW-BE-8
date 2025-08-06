@@ -3,9 +3,10 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import EmployeesServiceMap from '../service/EmployeesServiceMap.js';
 
+dotenv.config();
+
 const app = express();
 const employeesService = new EmployeesServiceMap();
-dotenv.config({path:'D:/Java project 3/employees-node-main/src/controller/.env'});
 
 app.use(express.json());
 app.use(morgan('combined'));
@@ -17,66 +18,52 @@ app.use((req, res, next) => {
     next();
 });
 
-const isValidEmployee = (employee: any): boolean => {
-    return employee &&
-           typeof employee.fullName === 'string' &&
-           typeof employee.avatar === 'string' &&
-           typeof employee.department === 'string' &&
-           typeof employee.birthDate === 'string' &&
-           typeof employee.salary === 'number';
-};
-
-app.get('/employees', (req, res) => {
+app.get('/employees', (req, res, next) => {
     try {
-        const employees = employeesService.getAllEmployees();
+        const department = req.query.department as string;
+        const employees = employeesService.getAllEmployees(department);
         res.json(employees);
     } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+        next(error);
     }
 });
 
-app.post('/employees', (req, res) => {
+app.post('/employees', (req, res, next) => {
     try {
-        if (!isValidEmployee(req.body)) {
-            res.status(400).json({ error: 'Invalid employee data' });
-            return;
-        }
         const newEmployee = employeesService.addEmployee(req.body);
         res.status(201).json(newEmployee);
     } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+        next(error);
     }
 });
 
-app.delete('/employees/:id', (req, res) => {
+app.delete('/employees/:id', (req, res, next) => {
     try {
-        const deleted = employeesService.deleteEmployee(req.params.id);
-        if (!deleted) {
-            res.status(404).json({ error: 'Employee not found' });
-            return;
-        }
-        res.status(204).send();
+        const deletedEmployee = employeesService.deleteEmployee(req.params.id);
+        res.json(deletedEmployee);
     } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+        next(error);
     }
 });
 
-app.patch('/employees/:id', (req, res) => {
+app.patch('/employees/:id', (req, res, next) => {
     try {
-        if (!isValidEmployee(req.body)) {
-            res.status(400).json({ error: 'Invalid employee data' });
-            return;
-        }
         const updatedEmployee = employeesService.updateEmployee(req.params.id, req.body);
-        if (!updatedEmployee) {
-            res.status(404).json({ error: 'Employee not found' });
-            return;
-        }
         res.json(updatedEmployee);
     } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+        next(error);
     }
 });
+
+app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    if (err.message.includes('not found')) {
+        res.status(404).json({ error: err.message });
+        return;
+    }
+    console.error('Server error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+});
+
 const port = process.env.PORT || 3500;
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);

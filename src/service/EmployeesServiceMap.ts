@@ -3,43 +3,12 @@ import EmployeesService from "./EmployeesService.js";
 
 export default class EmployeesServiceMap implements EmployeesService {
     private employees: Map<string, Employee> = new Map();
+    private idCounter: number = 1;
 
-    constructor() {
-        this.initialSample();
-    }
-    private initialSample(): void {
-        const sampleEmployees: Employee[] = [
-            {
-                fullName: "Ivan",
-                avatar: "https://i.pravatar.cc/150?img=1",
-                department: "Engineering",
-                birthDate: "1990-03-15",
-                salary: 25000
-            },
-            {
-                fullName: "Alexander",
-                avatar: "https://i.pravatar.cc/150?img=2",
-                department: "Marketing",
-                birthDate: "1988-07-22",
-                salary: 22000
-            },
-            {
-                fullName: "Valentina",
-                avatar: "https://i.pravatar.cc/150?img=3",
-                department: "Sales",
-                birthDate: "1992-11-08",
-                salary: 28000
-            }
-        ];
-
-        sampleEmployees.forEach((employee, index) => {
-            const id = (Date.now() + index).toString();
-            const employeeWithId: Employee = { ...employee, id };
-            this.employees.set(id, employeeWithId);
-        });
-    }
-    getAllEmployees(): Employee[] {
-        return Array.from(this.employees.values());
+    getAllEmployees(department?: string): Employee[] {
+        return department
+            ? Array.from(this.employees.values()).filter(emp => emp.department === department)
+            : Array.from(this.employees.values());
     }
 
     addEmployee(employee: Employee): Employee {
@@ -49,20 +18,28 @@ export default class EmployeesServiceMap implements EmployeesService {
         return newEmployee;
     }
 
-    updateEmployee(id: string, employee: Employee): Employee | null {
-        if (!this.employees.has(id)) {
-            return null;
+    updateEmployee(id: string, updates: Partial<Employee>): Employee {
+        const existingEmployee = this.employees.get(id);
+        if (!existingEmployee) {
+            throw new Error(`Employee with id ${id} not found`);
         }
-        const updatedEmployee: Employee = { ...employee, id };
+        const updatedEmployee: Employee = { ...existingEmployee, ...updates, id };
         this.employees.set(id, updatedEmployee);
         return updatedEmployee;
     }
 
-    deleteEmployee(id: string): boolean {
-        return this.employees.delete(id);
+    deleteEmployee(id: string): Employee {
+        const employee = this.employees.get(id);
+        if (!employee) {
+            throw new Error(`Employee with id ${id} not found`);
+        }
+        this.employees.delete(id);
+        return employee;
     }
 
     private generateId(): string {
-        return Date.now().toString();
+        const id = (Date.now() + this.idCounter).toString();
+        this.idCounter++;
+        return id;
     }
 }

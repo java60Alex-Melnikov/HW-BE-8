@@ -1,7 +1,7 @@
 import { Employee } from "../model/Employee.js";
 export default interface EmployeesService {
-    getAllEmployees(): Employee[];
+    getAllEmployees(department?: string): Employee[];
     addEmployee(employee: Employee): Employee;
-    updateEmployee(id: string, employee: Employee): Employee | null;
-    deleteEmployee(id: string): boolean;
+    updateEmployee(id: string, updates: Partial<Employee>): Employee;
+    deleteEmployee(id: string): Employee;
 }
